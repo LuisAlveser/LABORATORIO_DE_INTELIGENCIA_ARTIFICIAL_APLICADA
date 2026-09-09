@@ -1,0 +1,7 @@
+# IA e Editores
+**/.agents/
+**/.claude/
+**/.windsurf/
+
+# Dependências
+**/node_modules/

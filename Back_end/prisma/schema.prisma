@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+}
+
+type Crianca {
+  id                    String   @default(uuid()) 
+  responsavel_id        String?  @db.ObjectId     
+  nome                  String
+  idade                 Int
+  numero_pagina         Int
+  temas_favoritos       String[]
+  temas_evitar          String[]
+  personagens_favoritos String[]
+}
+
+model Responsavel {
+  id      String    @id @default(auto()) @map("_id") @db.ObjectId
+  nome    String
+  email   String    @unique
+  senha   String
+  crianca Crianca[] 
+}
+
+type PaginaHistoria {
+  numero     Int
+  texto      String
+  imagem_url String? 
+} 
+
+model Historia {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  crianca_id   String          
+  prompt_pai   String
+  paginas      PaginaHistoria[] 
+  criado_em    DateTime         @default(now())
+}
