@@ -10,37 +10,44 @@ generator client {
 
 datasource db {
   provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
-type Crianca {
-  id                    String   @default(uuid()) 
-  responsavel_id        String?  @db.ObjectId     
-  nome                  String
-  idade                 Int
-  numero_pagina         Int
-  temas_favoritos       String[]
-  temas_evitar          String[]
-  personagens_favoritos String[]
+ type PaginaHistoria {
+  numero     Int
+  texto      String
+  imagem_url String?
 }
 
 model Responsavel {
-  id      String    @id @default(auto()) @map("_id") @db.ObjectId
-  nome    String
-  email   String    @unique
-  senha   String
-  crianca Crianca[] 
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  nome     String
+  email    String    @unique
+  senha    String
+  criancas Crianca[]
 }
 
-type PaginaHistoria {
-  numero     Int
-  texto      String
-  imagem_url String? 
-} 
+
+model Crianca {
+  id                    String      @id @default(auto()) @map("_id") @db.ObjectId
+  responsavel_id        String      @db.ObjectId
+  responsavel           Responsavel @relation(fields: [responsavel_id], references: [id])
+  nome                  String
+  idade                 Int
+  numero_pagina         Int         @default(5)
+  temas_favoritos       String[]
+  temas_evitar          String[]
+  personagens_favoritos String[]
+  historias             Historia[]
+}
+
 
 model Historia {
-  id           String           @id @default(auto()) @map("_id") @db.ObjectId
-  crianca_id   String          
-  prompt_pai   String
-  paginas      PaginaHistoria[] 
-  criado_em    DateTime         @default(now())
+  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+  crianca_id          String           @db.ObjectId
+  crianca             Crianca          @relation(fields: [crianca_id], references: [id])
+  prompt_pai          String
+  temas_identificados String[]
+  paginas             PaginaHistoria[] 
+  criado_em           DateTime         @default(now())
 }
