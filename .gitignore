@@ -2,6 +2,14 @@
 **/.agents/
 **/.claude/
 **/.windsurf/
+/node_modules/
+
+# Ignorar a pasta de imagens do Front_end por completo
+/Front_end/assets/images/
+
+# Arquivos específicos do Front_end que não devem subir
+/Front_end/CLAUDE.md
+/Front_end/LICENSE
 
 # Dependências
 **/node_modules/
