@@ -1,4 +1,4 @@
-import { cadastroServico } from "@/app/servicos/autenticacao/cadastro";
+import { cadastroServico } from "../../servicos/autenticacao/cadastro"
 import {
   StyleSheet,
   Text,
@@ -15,11 +15,12 @@ import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { cadastroSchemaResponsavel } from '../app/schema/zod';
+import { cadastroSchemaResponsavel } from '../../schema/zod';
 import { useMutation } from '@tanstack/react-query';
-import { Spinner } from "@/app/componentes/animacaocarregamento"
+import { Spinner } from "../../componentes/animacaocarregamento"
 import { Eye, EyeOff, User, Mail, Lock } from "lucide-react-native";
 import { useRouter } from 'expo-router'; // ajuste o import conforme seu roteador
+import * as SecureStore from 'expo-secure-store';
 
 export type CadastroFormData = z.infer<typeof cadastroSchemaResponsavel>;
 
@@ -56,13 +57,32 @@ export default function App() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: cadastroServico.cadastrar,
-    onSuccess: () => {
-      Alert.alert('Sucesso!', 'Conta criada com sucesso.');
-      reset();
+    onSuccess: async (data: any) => {
+      const tokenRecebido = data.token;
+    await SecureStore.setItemAsync('user_token', tokenRecebido);
+
+ 
+     router.replace('/telaprincipal' as any);
+      
+    
     },
     onError: (error: any) => {
-      const mensagem = error.response?.data?.mensagem || 'Erro ao conectar ao servidor.';
-      Alert.alert('Erro no cadastro', mensagem);
+        if (error.response) {
+    console.log('Dados do Erro:', error.response.data);
+    console.log('Status do Erro:', error.response.status);
+    Alert.alert('Erro do Servidor', error.response.data?.mensagem || 'Erro interno.');
+  } 
+  // 2. A requisição foi feita mas nenhuma resposta foi recebida (Problema de Conexão/IP)
+  else if (error.request) {
+    console.log('Detalhes da Requisição Falhada (Olhar aqui):', error.request);
+    Alert.alert('Erro de Rede', 'Não foi possível contatar o servidor. Verifique o IP e a porta.');
+  } 
+  // 3. Algo aconteceu ao configurar a requisição
+  else {
+    console.log('Mensagem de Erro:', error.message);
+    Alert.alert('Erro', error.message);
+  }
+
     },
   });
 
@@ -75,11 +95,7 @@ export default function App() {
       style={{ flex: 1, backgroundColor: cores.fundo }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+      
         <View style={styles.cabecalho}>
           <Image
             source={require("@/assets/expo.icon/Assets/mascote.png")}
@@ -193,7 +209,7 @@ export default function App() {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      
     </KeyboardAvoidingView>
   );
 }
@@ -210,9 +226,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   imagemBoasVindas: {
-    width: 140,
-    height: 140,
+     width: 240,
+    height: 240,
     marginBottom: 8,
+    marginTop:30,
+    display:"flex"
   },
   titulo: {
     fontSize: 26,
@@ -228,14 +246,18 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingHorizontal: 16,
   },
-  card: {
+ card: {
     backgroundColor: cores.cardFundo,
     borderRadius: 20,
     padding: 24,
+      
+    marginHorizontal: 15,
     shadowColor: '#3D4670',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
+    
+    
     elevation: 4,
   },
   label: {
@@ -251,8 +273,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
     paddingHorizontal: 14,
+  
   },
   iconeCampo: {
     marginRight: 8,
