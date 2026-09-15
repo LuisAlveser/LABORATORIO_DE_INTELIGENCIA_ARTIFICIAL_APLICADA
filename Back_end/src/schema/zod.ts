@@ -23,9 +23,11 @@ export const alterarSenhaSchema = z.object({
 });
 
 export const criarCriancaSchema = z.object({
-  nome: z.string().min(3,"Nome muito curto").trim(),
+  nome: z.string().min(3, "Nome muito curto").trim(),
 
-  idade: z.number().int('A idade deve ser um número inteiro.')
+  
+  idade: z.number()
+  .int('A idade deve ser um número inteiro.')
   .positive('A idade deve ser maior que zero.')
   .max(18, 'O aplicativo é voltado para crianças e adolescentes até 18 anos.'),
 

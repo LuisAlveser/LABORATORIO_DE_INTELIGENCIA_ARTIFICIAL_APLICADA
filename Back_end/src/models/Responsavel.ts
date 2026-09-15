@@ -1,6 +1,7 @@
 import { Crianca } from "./Crianca";
 
-export interface PropResponsavel {
+
+export interface Responsavel {
     id?: string;
     nome: string;
     email: string;

@@ -111,25 +111,13 @@ import { prisma } from '../prisma';
        
         const id_resposavel=req.user.id
 
-            
-           
-            const criancaExistente = await prisma.crianca.findFirst({
-        where: {
-          responsavel_id: id_resposavel
-        }
-      });
 
-      if (!criancaExistente) {
-        return res.status(404).json({ mensagem: 'Nenhuma criança cadastrada' });
-      }
+      
            const listacrianca= await prisma.crianca.findMany({where:{responsavel_id:id_resposavel}})
 
-           return res.status(200).json({listacrianca});
+           return res.status(200).json(listacrianca);
         } catch (error) {
-            if (error instanceof ZodError) {
-                   
-                    return res.status(400).json({ mensagem:error.issues[0].message });
-                  } 
+        
                return res.status(500).json({mensagem:"Erro no servidor"})    
         }
     }

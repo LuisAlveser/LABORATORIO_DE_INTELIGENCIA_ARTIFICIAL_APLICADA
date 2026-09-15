@@ -30,6 +30,7 @@ export class ResponsavelController{
           email: responsavel.email
         }})
         } catch (error) {
+          console.error("Erro:",error)
             if(error instanceof ZodError){
                 return res.status(400).json({mensagem:error.issues[0].message})
             }
