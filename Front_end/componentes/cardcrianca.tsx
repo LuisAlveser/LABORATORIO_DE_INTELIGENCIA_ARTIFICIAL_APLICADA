@@ -1,252 +1,265 @@
-import { BookText, CalendarDays, CircleUserRound, Pencil, PersonStanding, Sparkles, Trash2 } from 'lucide-react-native';
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  SafeAreaView,
-  StatusBar, 
-  Alert
+import React from 'react';
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-
-
-
-
-const cores = {
-  fundo: '#F4F6FB',
-  cardFundo: '#FFFFFF',
-  primaria: '#6C8EF5',
-  primariaEscura: '#5578E8',
-  texto: '#2E3350',
-  textoSecundario: '#8A8FA3',
-  borda: '#E4E7F2',
-  erro: '#E5533D',
-};
-export interface CriancaProp{
-
-  id                    :string,
-  responsavel_id        :string, 
-  nome                  :string,
-  idade                 :number,
-  numero_pagina         :number,        
-  temas_favoritos       :string[],
-  temas_evitar          :string[],
-  personagens_favoritos :string[],
-
-}
+import {
+  BookOpen,
+  CalendarDays,
+  CircleUserRound,
+  Pencil,
+  Sparkles,
+  Trash2,
+} from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
-import {ExcluirCriancaServico} from "../servicos/crianca/excluir"
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-export default function CardCrianca({ crianca }: { crianca: CriancaProp }) {
+import { ExcluirCriancaServico } from '../servicos/crianca/excluir';
+import { Spinner } from './animacaocarregamento';
 
-   const queryClient = useQueryClient()
+const cores = {
+  superficie: '#FFFFFF',
+  primaria: '#287C72',
+  primariaEscura: '#20675F',
+  texto: '#263633',
+  textoSecundario: '#74827E',
+  borda: '#E2E9E5',
+  suave: '#EDF5F2',
+  erro: '#C94C4C',
+};
+
+export interface CriancaProp {
+  id: string;
+  responsavel_id: string;
+  nome: string;
+  idade: number;
+  numero_pagina: number;
+  temas_favoritos: string[];
+  temas_evitar: string[];
+  personagens_favoritos: string[];
+}
+
+export default function CardCrianca({
+  crianca,
+}: {
+  crianca: CriancaProp;
+}) {
+  const queryClient = useQueryClient();
 
   const { mutate: dispararExclusao, isPending } = useMutation({
     mutationFn: async (id: string) => {
       const token = await SecureStore.getItemAsync('user_token');
-      return ExcluirCriancaServico.excluir(id, token as string);
+
+      if (!token) {
+        throw new Error('Sua sessão expirou. Entre novamente na sua conta.');
+      }
+
+      return ExcluirCriancaServico.excluir(id, token);
     },
-    onSuccess: () => {
-      
-      queryClient.invalidateQueries({ queryKey: ['criancas'] });
-     
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['criancas'] });
     },
     onError: (error: any) => {
-      const mensagem = error.response?.data?.mensagem || 'Erro ao tentar excluir a criança.';
-   
-    }
+      const mensagem =
+        error.response?.data?.mensagem ??
+        error.message ??
+        'Não foi possível excluir o perfil. Tente novamente.';
+
+      Alert.alert('Não foi possível excluir', mensagem);
+    },
   });
-const lidarComExclusao = (id: string) => {
+
+  const confirmarExclusao = () => {
     Alert.alert(
-      'Excluir Criança',
-      `Tem certeza que deseja remover ${crianca.nome}?`,
+      'Remover perfil?',
+      `O perfil de ${crianca.nome} será removido.`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Excluir', 
-          style: 'destructive', 
-          onPress: () => dispararExclusao(id) 
-        }
-      ]
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () => dispararExclusao(crianca.id),
+        },
+      ],
     );
   };
 
   return (
     <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.infoAvatarGroup}>
-          <View style={styles.avatarContainer}>
-            {/* Lucide Icon: PersonStanding */}
-            <CircleUserRound size={22} color={cores.primaria} strokeWidth={1.5}/>
-            
+      <View style={styles.cabecalho}>
+        <View style={styles.grupoIdentidade}>
+          <View style={styles.avatar}>
+            <CircleUserRound size={23} color={cores.primaria} strokeWidth={1.8} />
           </View>
-          <Text style={styles.nomeCriança}>{crianca.nome}</Text>
+          <View style={styles.identidade}>
+            <Text style={styles.nome} numberOfLines={1}>
+              {crianca.nome}
+            </Text>
+            <Text style={styles.descricao}>Perfil da criança</Text>
+          </View>
         </View>
 
-        <View style={styles.acoesContainer}>
-          <TouchableOpacity style={styles.iconeBotao} activeOpacity={0.6}>
-            
-            <Pencil size={18} color={cores.textoSecundario} strokeWidth={2} />
+        <View style={styles.acoes}>
+          <TouchableOpacity
+            style={styles.botaoIcone}
+            onPress={() =>
+              Alert.alert(
+                'Editar perfil',
+                'A edição do perfil ainda não está disponível.',
+              )
+            }
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Editar perfil de ${crianca.nome}`}
+          >
+            <Pencil size={17} color={cores.textoSecundario} />
           </TouchableOpacity>
 
-          <TouchableOpacity 
-          style={styles.iconeBotao} activeOpacity={0.6} onPress={() => lidarComExclusao(crianca.id)}>
-           
-            <Trash2 size={18} color={cores.erro} strokeWidth={2} />
+          <TouchableOpacity
+            style={[styles.botaoIcone, styles.botaoExcluir]}
+            onPress={confirmarExclusao}
+            disabled={isPending}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Remover perfil de ${crianca.nome}`}
+          >
+            {isPending ? (
+              <Spinner />
+            ) : (
+              <Trash2 size={17} color={cores.erro} />
+            )}
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.cardCorpo}>
-        {/* Linha da Idade */}
-        <View style={styles.infoLinha}>
-          <View style={styles.infoIconeWrapper}>
-            {/* Lucide Icon: CalendarDays */}
-            <CalendarDays size={16} color={cores.textoSecundario} strokeWidth={2} />
-          </View>
+      <View style={styles.informacoes}>
+        <View style={styles.infoPill}>
+          <CalendarDays size={16} color={cores.primaria} />
           <Text style={styles.infoTexto}>
-            <Text style={styles.infoLabel}>Idade: </Text>{crianca.idade} anos
+            {crianca.idade} {crianca.idade === 1 ? 'ano' : 'anos'}
           </Text>
         </View>
 
-        {/* Linha do Número de Páginas (Nova) */}
-        <View style={styles.infoLinha}>
-          <View style={styles.infoIconeWrapper}>
-            {/* Lucide Icon: BookText */}
-            <BookText size={16} color={cores.textoSecundario} strokeWidth={2} />
-          </View>
+        <View style={styles.infoPill}>
+          <BookOpen size={16} color={cores.primaria} />
           <Text style={styles.infoTexto}>
-            <Text style={styles.infoLabel}>Nº de Páginas: </Text>{crianca.numero_pagina}
+            {crianca.numero_pagina}{' '}
+            {crianca.numero_pagina === 1 ? 'página' : 'páginas'}
           </Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.botaoAcaoCard} activeOpacity={0.8}>
-        <Text style={styles.botaoAcaoTexto}>Gerar História</Text>
-        {/* Lucide Icon: Sparkles */}
-        <Sparkles size={16} color="#FFFFFF" style={{ marginLeft: 8 }} strokeWidth={2} />
+      <TouchableOpacity
+        style={styles.botaoHistoria}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={`Gerar história para ${crianca.nome}`}
+      >
+        <Sparkles size={17} color="#FFFFFF" />
+        <Text style={styles.textoBotaoHistoria}>Criar uma história</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: cores.fundo,
-  },
-  cabecalhoSuperior: {
-    height: 60,
-    backgroundColor: cores.cardFundo,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: cores.borda,
-    shadowColor: '#3D4670',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  infoIconeWrapper: {
-    width: 20, 
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  tituloHeader: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: cores.texto,
-  },
-  scrollContent: {
-    padding: 24,
-    paddingTop: 20,
-    paddingBottom: 90, // Espaço para não cobrir o último card com o footer
-  },
   card: {
-    backgroundColor: cores.cardFundo,
+    backgroundColor: cores.superficie,
     borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#3D4670',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#EEF1ED',
+    shadowColor: '#263633',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
   },
-  cardHeader: {
+  cabecalho: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: cores.borda,
-    paddingBottom: 12,
-    marginBottom: 14,
   },
-  infoAvatarGroup: {
+  grupoIdentidade: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  avatarContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FAFBFF',
-    borderWidth: 1,
-    borderColor: cores.borda,
-    alignItems: 'center',
-    justifyContent: 'center',
+    gap: 11,
     marginRight: 10,
   },
-  nomeCriança: {
-    fontSize: 17,
-    fontWeight: '700',
+  avatar: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: cores.suave,
+    borderRadius: 15,
+  },
+  identidade: {
+    flex: 1,
+  },
+  nome: {
     color: cores.texto,
+    fontSize: 16,
+    fontWeight: '700',
   },
-  acoesContainer: {
+  descricao: {
+    color: cores.textoSecundario,
+    fontSize: 12,
+    marginTop: 3,
+  },
+  acoes: {
     flexDirection: 'row',
+    gap: 7,
   },
-  iconeBotao: {
-    paddingLeft: 8,
-    paddingVertical: 4,
+  botaoIcone: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F7F8F5',
+    borderRadius: 12,
   },
-  cardCorpo: {
-    marginBottom: 16,
+  botaoExcluir: {
+    backgroundColor: '#FFF3F1',
   },
-  infoLinha: {
+  informacoes: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 9,
+    marginTop: 15,
+    marginBottom: 17,
+  },
+  infoPill: {
+    minHeight: 34,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  infoIcone: {
-    marginRight: 8,
-    width: 18,
+    gap: 7,
+    backgroundColor: cores.suave,
+    borderRadius: 11,
+    paddingHorizontal: 11,
   },
   infoTexto: {
-    fontSize: 14,
     color: cores.texto,
-  },
-  infoLabel: {
+    fontSize: 12,
     fontWeight: '600',
-    color: cores.textoSecundario,
   },
-  botaoAcaoCard: {
-    backgroundColor: cores.primaria,
-    borderRadius: 12,
-    paddingVertical: 12,
+  botaoHistoria: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: cores.primariaEscura,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 3,
+    gap: 8,
+    backgroundColor: cores.primaria,
+    borderRadius: 13,
   },
-  botaoAcaoTexto: {
+  textoBotaoHistoria: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',

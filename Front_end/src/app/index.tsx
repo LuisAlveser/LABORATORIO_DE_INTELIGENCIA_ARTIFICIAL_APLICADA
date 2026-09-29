@@ -1,148 +1,146 @@
-import { cadastroServico } from "../../servicos/autenticacao/cadastro"
+import React from 'react';
 import {
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
-  Image,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
-import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { cadastroSchemaResponsavel } from '../../schema/zod';
 import { useMutation } from '@tanstack/react-query';
-import { Spinner } from "../../componentes/animacaocarregamento"
-import { Eye, EyeOff, User, Mail, Lock } from "lucide-react-native";
-import { useRouter } from 'expo-router'; // ajuste o import conforme seu roteador
+import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react-native';
+
+import { cadastroSchemaResponsavel } from '../../schema/zod';
+import { cadastroServico } from '../../servicos/autenticacao/cadastro';
+import { Spinner } from '../../componentes/animacaocarregamento';
 
 export type CadastroFormData = z.infer<typeof cadastroSchemaResponsavel>;
 
-// Paleta pensada para transmitir calma e acolhimento (tons suaves, baixo contraste agressivo)
 const cores = {
-  fundo: '#F4F6FB',
-  cardFundo: '#FFFFFF',
-  primaria: '#6C8EF5',
-  primariaEscura: '#5578E8',
-  texto: '#2E3350',
-  textoSecundario: '#8A8FA3',
-  borda: '#E4E7F2',
-  erro: '#E5533D',
+  fundo: '#F7F8F5',
+  superficie: '#FFFFFF',
+  primaria: '#287C72',
+  primariaEscura: '#20675F',
+  texto: '#263633',
+  textoSecundario: '#74827E',
+  borda: '#E2E9E5',
+  campo: '#FBFCFA',
+  erro: '#C94C4C',
 };
 
-export default function App() {
+export default function CadastroScreen() {
   const router = useRouter();
-  const [mostrarSenha, setMostrarSenha] = React.useState<boolean>(false);
-  const funcaoToggleSenha = () => setMostrarSenha(!mostrarSenha);
+  const [mostrarSenha, setMostrarSenha] = React.useState(false);
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-    reset
   } = useForm<CadastroFormData>({
     resolver: zodResolver(cadastroSchemaResponsavel),
-    defaultValues: {
-      nome: '',
-      email: '',
-      senha: '',
-    }
+    defaultValues: { nome: '', email: '', senha: '' },
   });
 
   const { mutate, isPending } = useMutation({
     mutationFn: cadastroServico.cadastrar,
     onSuccess: async (data: any) => {
-      const tokenRecebido = data.token;
-    await SecureStore.setItemAsync('user_token', tokenRecebido);
-
- 
-     router.replace('/telaprincipal' as any);
-      
-    
+      if (data?.token) {
+        await SecureStore.setItemAsync('user_token', data.token);
+      }
+      router.replace('/telaprincipal' as any);
     },
     onError: (error: any) => {
-        if (error.response) {
-    console.log('Dados do Erro:', error.response.data);
-    console.log('Status do Erro:', error.response.status);
-    Alert.alert('Erro do Servidor', error.response.data?.mensagem || 'Erro interno.');
-  } 
-  // 2. A requisição foi feita mas nenhuma resposta foi recebida (Problema de Conexão/IP)
-  else if (error.request) {
-    console.log('Detalhes da Requisição Falhada (Olhar aqui):', error.request);
-    Alert.alert('Erro de Rede', 'Não foi possível contatar o servidor. Verifique o IP e a porta.');
-  } 
-  // 3. Algo aconteceu ao configurar a requisição
-  else {
-    console.log('Mensagem de Erro:', error.message);
-    Alert.alert('Erro', error.message);
-  }
+      const mensagem =
+        error.response?.data?.mensagem ??
+        (error.request
+          ? 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.'
+          : error.message ?? 'Tente novamente em alguns instantes.');
 
+      Alert.alert('Não foi possível criar sua conta', mensagem);
     },
   });
 
-  const onSubmit = (data: CadastroFormData) => {
-    mutate(data);
-  };
-
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: cores.fundo }}
+      style={styles.tela}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.cabecalho}>
           <Image
-            source={require("@/assets/expo.icon/Assets/mascote.png")}
-            style={styles.imagemBoasVindas}
+            source={require('@/assets/expo.icon/Assets/mascote.png')}
+            style={styles.mascote}
             resizeMode="contain"
+            accessibilityLabel="Mascote do aplicativo"
           />
-          <Text style={styles.titulo}>Seja bem-vindo!</Text>
+          <Text style={styles.selo}>HISTÓRIAS FEITAS PARA SUA FAMÍLIA</Text>
+          <Text style={styles.titulo}>Vamos começar?</Text>
           <Text style={styles.subtitulo}>
-            Crie sua conta e comece a montar histórias únicas para o seu filho
+            Crie sua conta para inventar histórias especiais para seu filho.
           </Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.label}>Nome completo</Text>
+          <Text style={styles.tituloFormulario}>Criar conta</Text>
+          <Text style={styles.dicaFormulario}>
+            Leva só um minutinho.
+          </Text>
+
+          <Text style={styles.label}>Seu nome</Text>
           <Controller
             control={control}
             name="nome"
             render={({ field: { onChange, onBlur, value } }) => (
-              <View style={[styles.inputContainer, errors.nome && styles.inputErro]}>
-                <User size={20} color={cores.textoSecundario} style={styles.iconeCampo} />
+              <View style={[styles.campo, errors.nome && styles.campoErro]}>
+                <User size={19} color={cores.textoSecundario} />
                 <TextInput
-                  style={styles.inputTexto}
-                  placeholder="Digite seu nome"
-                  placeholderTextColor="#A6ABBD"
+                  style={styles.input}
+                  placeholder="Como podemos chamar você?"
+                  placeholderTextColor="#9AA6A2"
+                  autoCapitalize="words"
+                  autoComplete="name"
+                  returnKeyType="next"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
-                  accessibilityLabel="Nome completo"
+                  accessibilityLabel="Seu nome"
                 />
               </View>
             )}
           />
-          {errors.nome && <Text style={styles.erroTexto}>{errors.nome.message}</Text>}
+          {errors.nome && (
+            <Text style={styles.textoErro}>{errors.nome.message}</Text>
+          )}
 
           <Text style={styles.label}>E-mail</Text>
           <Controller
             control={control}
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
-              <View style={[styles.inputContainer, errors.email && styles.inputErro]}>
-                <Mail size={20} color={cores.textoSecundario} style={styles.iconeCampo} />
+              <View style={[styles.campo, errors.email && styles.campoErro]}>
+                <Mail size={19} color={cores.textoSecundario} />
                 <TextInput
-                  style={styles.inputTexto}
-                  placeholder="seu-email@exemplo.com"
-                  placeholderTextColor="#A6ABBD"
+                  style={styles.input}
+                  placeholder="voce@exemplo.com"
+                  placeholderTextColor="#9AA6A2"
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  returnKeyType="next"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
@@ -151,195 +149,225 @@ export default function App() {
               </View>
             )}
           />
-          {errors.email && <Text style={styles.erroTexto}>{errors.email.message}</Text>}
+          {errors.email && (
+            <Text style={styles.textoErro}>{errors.email.message}</Text>
+          )}
 
           <Text style={styles.label}>Senha</Text>
           <Controller
             control={control}
             name="senha"
             render={({ field: { onChange, onBlur, value } }) => (
-              <View style={[styles.inputContainer, errors.senha && styles.inputErro]}>
-                <Lock size={20} color={cores.textoSecundario} style={styles.iconeCampo} />
+              <View style={[styles.campo, errors.senha && styles.campoErro]}>
+                <Lock size={19} color={cores.textoSecundario} />
                 <TextInput
-                  style={styles.inputTexto}
-                  placeholder="Digite sua senha"
-                  placeholderTextColor="#A6ABBD"
+                  style={styles.input}
+                  placeholder="Crie uma senha"
+                  placeholderTextColor="#9AA6A2"
                   secureTextEntry={!mostrarSenha}
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="new-password"
+                  returnKeyType="done"
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
                   accessibilityLabel="Senha"
                 />
                 <TouchableOpacity
-                  onPress={funcaoToggleSenha}
-                  style={styles.iconeBotao}
-                  accessibilityLabel={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                  onPress={() => setMostrarSenha((visivel) => !visivel)}
+                  style={styles.botaoIcone}
+                  accessibilityRole="button"
+                  accessibilityLabel={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                  hitSlop={10}
                 >
                   {mostrarSenha ? (
-                    <Eye size={20} color={cores.textoSecundario} />
+                    <EyeOff size={19} color={cores.textoSecundario} />
                   ) : (
-                    <EyeOff size={20} color={cores.textoSecundario} />
+                    <Eye size={19} color={cores.textoSecundario} />
                   )}
                 </TouchableOpacity>
               </View>
             )}
           />
-          {errors.senha && <Text style={styles.erroTexto}>{errors.senha.message}</Text>}
+          {errors.senha && (
+            <Text style={styles.textoErro}>{errors.senha.message}</Text>
+          )}
 
           <TouchableOpacity
             disabled={isPending}
             style={[styles.botao, isPending && styles.botaoDesabilitado]}
-            onPress={handleSubmit(onSubmit)}
+            onPress={handleSubmit((dados) => mutate(dados))}
             activeOpacity={0.85}
+            accessibilityRole="button"
           >
             {isPending ? (
-              <View style={styles.conteudoBotao}>
-                <Spinner />
-              </View>
+              <Spinner />
             ) : (
-              <Text style={styles.botaoTexto}>Cadastrar</Text>
+              <Text style={styles.textoBotao}>Criar minha conta</Text>
             )}
           </TouchableOpacity>
 
-          <View style={styles.linhaLogin}>
-            <Text style={styles.textoLogin}>Já tem uma conta? </Text>
-            <TouchableOpacity onPress={() => router.push('/login')}>
-              <Text style={styles.linkLogin}>Faça login</Text>
+          <View style={styles.linhaConta}>
+            <Text style={styles.textoConta}>Já tem uma conta? </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/login')}
+              accessibilityRole="button"
+              hitSlop={8}
+            >
+              <Text style={styles.link}>Entrar</Text>
             </TouchableOpacity>
           </View>
         </View>
-      
+
+        <Text style={styles.rodape}>
+          Um espaço seguro para criar momentos e histórias em família.
+        </Text>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  tela: {
+    flex: 1,
+    backgroundColor: cores.fundo,
+  },
   scrollContent: {
     flexGrow: 1,
-    padding: 24,
-    paddingTop: 48,
-    paddingBottom: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    paddingTop: Platform.OS === 'ios' ? 28 : 20,
+    paddingBottom: 28,
   },
   cabecalho: {
     alignItems: 'center',
     marginBottom: 24,
   },
-  imagemBoasVindas: {
-     width: 240,
-    height: 240,
-    marginBottom: 8,
-    marginTop:30,
-    display:"flex"
+  mascote: {
+    width: 126,
+    height: 126,
+    marginBottom: 10,
+  },
+  selo: {
+    color: cores.primaria,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 9,
   },
   titulo: {
-    fontSize: 26,
-    fontWeight: '700',
     color: cores.texto,
+    fontSize: 28,
+    fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   subtitulo: {
-    fontSize: 14,
     color: cores.textoSecundario,
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 16,
-  },
- card: {
-    backgroundColor: cores.cardFundo,
-    borderRadius: 20,
-    padding: 24,
-      
-    marginHorizontal: 15,
-    shadowColor: '#3D4670',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    
-    
-    elevation: 4,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: cores.texto,
-    marginBottom: 6,
-  },
-  inputContainer: {
-    backgroundColor: '#FAFBFF',
-    borderWidth: 1.5,
-    borderColor: cores.borda,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    paddingHorizontal: 14,
-  
-  },
-  iconeCampo: {
-    marginRight: 8,
-  },
-  inputTexto: {
-    flex: 1,
-    paddingVertical: 13,
     fontSize: 15,
-    color: cores.texto,
-  },
-  iconeBotao: {
-    paddingLeft: 8,
-    paddingVertical: 4,
-  },
-  inputErro: {
-    borderColor: cores.erro,
-  },
-  erroTexto: {
-    color: cores.erro,
-    fontSize: 12,
-    marginTop: -12,
-    marginBottom: 14,
-    marginLeft: 4,
-  },
-  botao: {
-    backgroundColor: cores.primaria,
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
+    lineHeight: 22,
+    textAlign: 'center',
     marginTop: 8,
-    minHeight: 52,
-    shadowColor: cores.primariaEscura,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    maxWidth: 310,
+  },
+  card: {
+    backgroundColor: cores.superficie,
+    borderRadius: 22,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: '#EEF1ED',
+    shadowColor: '#263633',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
     elevation: 3,
   },
-  botaoDesabilitado: {
-    backgroundColor: '#B7C6F9',
-    shadowOpacity: 0,
+  tituloFormulario: {
+    color: cores.texto,
+    fontSize: 20,
+    fontWeight: '700',
   },
-  conteudoBotao: {
+  dicaFormulario: {
+    color: cores.textoSecundario,
+    fontSize: 14,
+    marginTop: 4,
+    marginBottom: 20,
+  },
+  label: {
+    color: cores.texto,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 7,
+  },
+  campo: {
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 11,
+    backgroundColor: cores.campo,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: 13,
+    paddingHorizontal: 14,
+    marginBottom: 15,
   },
-  botaoTexto: {
-    color: '#fff',
+  campoErro: {
+    borderColor: cores.erro,
+  },
+  input: {
+    flex: 1,
+    color: cores.texto,
+    fontSize: 15,
+    paddingVertical: 12,
+  },
+  botaoIcone: {
+    padding: 4,
+  },
+  textoErro: {
+    color: cores.erro,
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 12,
+    marginLeft: 3,
+  },
+  botao: {
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: cores.primaria,
+    borderRadius: 14,
+    marginTop: 6,
+  },
+  botaoDesabilitado: {
+    backgroundColor: '#9ABDB7',
+  },
+  textoBotao: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  linhaLogin: {
+  linhaConta: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 20,
   },
-  textoLogin: {
-    fontSize: 14,
+  textoConta: {
     color: cores.textoSecundario,
-  },
-  linkLogin: {
     fontSize: 14,
+  },
+  link: {
     color: cores.primaria,
+    fontSize: 14,
     fontWeight: '700',
+  },
+  rodape: {
+    color: cores.textoSecundario,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: 'center',
+    marginTop: 20,
+    paddingHorizontal: 20,
   },
 });
