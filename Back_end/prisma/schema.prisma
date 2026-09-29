@@ -1,36 +1,42 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
- type PaginaHistoria {
-  numero     Int
-  texto      String
-  imagem_url String?
+model PaginaHistoria {
+  id          String   @id @default(uuid())
+  numero      Int
+  texto       String
+  imagem_url  String?
+  historia_id String
+  historia    Historia @relation(fields: [historia_id], references: [id], onDelete: Cascade)
 }
 
 model Responsavel {
-  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  id       String    @id @default(uuid())
   nome     String
   email    String    @unique
   senha    String
   criancas Crianca[]
 }
 
+enum TipodeAvaliação {
+  GOSTEI
+  NAO_GOSTEI
+  OK
+}
 
 model Crianca {
-  id                    String      @id @default(auto()) @map("_id") @db.ObjectId
-  responsavel_id        String      @db.ObjectId
+  id                    String      @id @default(uuid())
+  responsavel_id        String
   responsavel           Responsavel @relation(fields: [responsavel_id], references: [id])
   nome                  String
   idade                 Int
@@ -39,15 +45,32 @@ model Crianca {
   temas_evitar          String[]
   personagens_favoritos String[]
   historias             Historia[]
+
+  avaliacaoAvulsas AvaliacaoAvulsa[]
 }
 
+enum TipoAvaliacao {
+  GOSTEI
+  NAO_GOSTEI
+  OK
+}
+
+model AvaliacaoAvulsa {
+  id                  String        @id @default(uuid())
+  crianca_id          String
+  crianca             Crianca       @relation(fields: [crianca_id], references: [id], onDelete: Cascade)
+  prompt_pai          String // Guarda o que o pai pediu para entender o contexto
+  temas_identificados String[]
+  avaliacao           TipoAvaliacao
+  criado_em           DateTime      @default(now())
+}
 
 model Historia {
-  id                  String           @id @default(auto()) @map("_id") @db.ObjectId
-  crianca_id          String           @db.ObjectId
+  id                  String           @id @default(uuid())
+  crianca_id          String
   crianca             Crianca          @relation(fields: [crianca_id], references: [id])
   prompt_pai          String
   temas_identificados String[]
-  paginas             PaginaHistoria[] 
+  paginas             PaginaHistoria[]
   criado_em           DateTime         @default(now())
 }

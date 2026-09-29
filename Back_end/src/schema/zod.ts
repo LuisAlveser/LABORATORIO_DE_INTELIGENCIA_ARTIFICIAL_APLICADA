@@ -23,32 +23,30 @@ export const alterarSenhaSchema = z.object({
 });
 
 export const criarCriancaSchema = z.object({
-  nome: z.string().min(3,"Nome muito curto").trim(),
+  nome: z.string().min(3, "Nome muito curto").trim(),
 
-  idade: z.number().int('A idade deve ser um número inteiro.')
-  .positive('A idade deve ser maior que zero.')
-  .max(18, 'O aplicativo é voltado para crianças e adolescentes até 18 anos.'),
+  idade: z.string()
+    .max(18, 'O aplicativo é voltado para crianças e adolescentes até 18 anos.'),
 
   numero_pagina: z.number().default(5),
 });
 
 export const atualizarCriancaSchema = z.object({
-  nome: z.string().min(3,"Nome muito curto").trim(),
-  idade: z.number().int('A idade deve ser um número inteiro.').positive('A idade deve ser maior que zero.')
-  .max(18, 'O aplicativo é voltado para crianças e adolescentes até 18 anos.'),
+  nome: z.string().min(3, "Nome muito curto").trim(),
+  idade: z.string().max(18, 'O aplicativo é voltado para crianças e adolescentes até 18 anos.'),
 
- 
+
 });
 export const itemListaSchema = z.object({
-  
+
   itens: z.array(z.string().trim().min(1)).or(z.string().trim().min(1).transform(val => [val]))
 });
 
 export const promptPai = z.object({
   crianca_id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'ID da criança inválido (deve ser um ObjectId válido).'),
   prompt_pai: z.string().trim()
-  .min(5, 'A instrução da história deve ter pelo menos 5 caracteres.')
-  .max(500, 'A instrução da história não pode passar de 500 caracteres.')
+    .min(5, 'A instrução da história deve ter pelo menos 5 caracteres.')
+    .max(500, 'A instrução da história não pode passar de 500 caracteres.')
 })
 export const historiaTextoSchema = z.object({
   temas_identificados: z.array(z.string()).min(2).max(4),
@@ -67,7 +65,7 @@ export const paginaHistoriaSchema = z.object({
   imagem_url: z
     .string()
     .nullable()
-    .optional() 
+    .optional()
 });
 
 

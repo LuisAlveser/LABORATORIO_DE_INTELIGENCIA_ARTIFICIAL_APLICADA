@@ -1,47 +1,50 @@
 import { Request, Response } from 'express';
 import { string, ZodError } from 'zod';
-import { criarCriancaSchema,atualizarCriancaSchema, itemListaSchema } from '../schema/zod';
+import { criarCriancaSchema, atualizarCriancaSchema, itemListaSchema } from '../schema/zod';
 import { prisma } from '../prisma';
 
- export class CriancaController{
-    public static async cadastrarCrianca(req:Request,res:Response){
-        try {
-        const body=req.body
-        const id_resposavel=req.user.id
+export class CriancaController {
+  public static async cadastrarCrianca(req: Request, res: Response) {
+    try {
+      const body = req.body
+      const id_resposavel = req.user.id
 
-            if(!id_resposavel){
-                return res.status(400).json({ mensagem:"Responsável não encontrado"});
-            }
-            const validador=criarCriancaSchema.parse(body)
+      if (!id_resposavel) {
+        return res.status(400).json({ mensagem: "Responsável não encontrado" });
+      }
+      const validador = criarCriancaSchema.parse(body)
 
-           const novaCrianca= await prisma.crianca.create({data:{
-                nome:validador.nome,
-                numero_pagina:validador.numero_pagina,
-                idade:validador.idade,
-                responsavel_id:id_resposavel
-            }})
-            return res.status(201).json({novaCrianca});
-        } catch (error) {
-            if (error instanceof ZodError) {
-                   
-                    return res.status(400).json({ mensagem:error.issues[0].message });
-                  } 
-               return res.status(500).json({mensagem:"Erro no servidor"})    
+      const novaCrianca = await prisma.crianca.create({
+        data: {
+          nome: validador.nome,
+          numero_pagina: validador.numero_pagina,
+          idade: Number(validador.idade),
+          responsavel_id: id_resposavel
         }
+      })
+      return res.status(201).json({ novaCrianca });
+    } catch (error) {
+      console.log(error)
+      if (error instanceof ZodError) {
+
+        return res.status(400).json({ mensagem: error.issues[0].message });
+      }
+      return res.status(500).json({ mensagem: "Erro no servidor" })
     }
+  }
 
-    public static async atualizarCrianca(req:Request,res:Response){
-        try {
-        const body=req.body
-        const id=  req.params.id as string
-        const id_resposavel=req.user.id
+  public static async atualizarCrianca(req: Request, res: Response) {
+    try {
+      const body = req.body
+      const id = req.params.id as string
+      const id_resposavel = req.user.id
 
-            if(!id){
-                return res.status(400).json({ mensagem:"Criança não encontrada"});
-            }
-            const validador= atualizarCriancaSchema.parse(body)
-         
-            const criancaExistente = await prisma.crianca.findFirst({
+      if (!id) {
+        return res.status(400).json({ mensagem: "Criança não encontrada" });
+      }
+      const validador = atualizarCriancaSchema.parse(body)
+
+      const criancaExistente = await prisma.crianca.findFirst({
         where: {
           id: id,
           responsavel_id: id_resposavel
@@ -51,36 +54,38 @@ import { prisma } from '../prisma';
       if (!criancaExistente) {
         return res.status(404).json({ mensagem: 'Criança não encontrada ou não pertence a este responsável.' });
       }
-           const criancaAtualizada= await prisma.crianca.update({data:{
-                nome:validador.nome,
-                idade:validador.idade,
-               
-            },where:{id:criancaExistente.id}})
+      const criancaAtualizada = await prisma.crianca.update({
+        data: {
+          nome: validador.nome,
+          idade: Number(validador.idade),
 
-           return res.status(200).json({
+        }, where: { id: criancaExistente.id }
+      })
+
+      return res.status(200).json({
         mensagem: 'Perfil da criança atualizado com sucesso.',
         crianca: criancaAtualizada
       });
-        } catch (error) {
-            if (error instanceof ZodError) {
-                   
-                    return res.status(400).json({ mensagem:error.issues[0].message });
-                  } 
-               return res.status(500).json({mensagem:"Erro no servidor"})    
-        }
+    } catch (error) {
+      if (error instanceof ZodError) {
+
+        return res.status(400).json({ mensagem: error.issues[0].message });
+      }
+      return res.status(500).json({ mensagem: "Erro no servidor" })
     }
+  }
 
-    public  static async excluirCrianca(req:Request,res:Response){
-        try {
-       
-        const id=  req.params.id as string
-        const id_resposavel=req.user.id
+  public static async excluirCrianca(req: Request, res: Response) {
+    try {
 
-            if(!id){
-                return res.status(400).json({ mensagem:"Criança não encontrada"});
-            }
-           
-            const criancaExistente = await prisma.crianca.findFirst({
+      const id = req.params.id as string
+      const id_resposavel = req.user.id
+
+      if (!id) {
+        return res.status(400).json({ mensagem: "Criança não encontrada" });
+      }
+
+      const criancaExistente = await prisma.crianca.findFirst({
         where: {
           id: id,
           responsavel_id: id_resposavel
@@ -90,59 +95,60 @@ import { prisma } from '../prisma';
       if (!criancaExistente) {
         return res.status(404).json({ mensagem: 'Criança não encontrada ou não pertence a este responsável.' });
       }
-           await prisma.crianca.delete({where:{id:criancaExistente.id}})
+      await prisma.crianca.delete({ where: { id: criancaExistente.id } })
 
-           return res.status(200).json({
+      return res.status(200).json({
         mensagem: 'Perfil da criança excluido com sucesso.',
-       
+
       });
-        } catch (error) {
-            if (error instanceof ZodError) {
-                   
-                    return res.status(400).json({ mensagem:error.issues[0].message });
-                  } 
-               return res.status(500).json({mensagem:"Erro no servidor"})    
-        }
+    } catch (error) {
+      if (error instanceof ZodError) {
+
+        return res.status(400).json({ mensagem: error.issues[0].message });
+      }
+      return res.status(500).json({ mensagem: "Erro no servidor" })
     }
+  }
 
-     public static async listarCrianca(req:Request,res:Response){
-        try {
-       
-       
-        const id_resposavel=req.user.id
+  public static async listarCrianca(req: Request, res: Response) {
+    try {
 
-            
-           
-            const criancaExistente = await prisma.crianca.findFirst({
+
+      const id_responsavel = req.user.id
+
+      if (!id_responsavel) {
+        return res.status(401).json({ mensagem: 'Usuário não autenticado ou ID ausente' });
+      }
+
+      const listacrianca = await prisma.crianca.findMany({
         where: {
-          responsavel_id: id_resposavel
+          responsavel_id: id_responsavel
         }
       });
 
-      if (!criancaExistente) {
+      // 3. Se o array vier vazio, significa que não há crianças para ESSE id_responsavel
+      if (listacrianca.length === 0) {
         return res.status(404).json({ mensagem: 'Nenhuma criança cadastrada' });
       }
-           const listacrianca= await prisma.crianca.findMany({where:{responsavel_id:id_resposavel}})
+      return res.status(200).json(listacrianca);
+    } catch (error) {
+      if (error instanceof ZodError) {
 
-           return res.status(200).json({listacrianca});
-        } catch (error) {
-            if (error instanceof ZodError) {
-                   
-                    return res.status(400).json({ mensagem:error.issues[0].message });
-                  } 
-               return res.status(500).json({mensagem:"Erro no servidor"})    
-        }
+        return res.status(400).json({ mensagem: error.issues[0].message });
+      }
+      return res.status(500).json({ mensagem: "Erro no servidor" })
     }
-    
-    public static async adicionarTemafavorito(req: Request, res: Response) {
+  }
+
+  public static async adicionarTemafavorito(req: Request, res: Response) {
     try {
       const id = req.params.id as string;
       const id_responsavel = req.user.id;
 
-     
+
       const { itens } = itemListaSchema.parse(req.body);
 
-      
+
       const crianca = await prisma.crianca.findFirst({
         where: { id, responsavel_id: id_responsavel }
       });
@@ -151,7 +157,7 @@ import { prisma } from '../prisma';
         return res.status(404).json({ mensagem: 'Criança não encontrada ou não pertence a este responsável.' });
       }
 
-    
+
       const temasAtualizados = Array.from(new Set([...crianca.temas_favoritos, ...itens]));
 
       const criancaAtualizada = await prisma.crianca.update({
@@ -173,7 +179,7 @@ import { prisma } from '../prisma';
     }
   }
 
- 
+
   public static async adicionarTemaParaEvitar(req: Request, res: Response) {
     try {
       const id = req.params.id as string;
@@ -210,7 +216,7 @@ import { prisma } from '../prisma';
     }
   }
 
-  
+
   public static async adicionarPersonagem(req: Request, res: Response) {
     try {
       const id = req.params.id as string;
